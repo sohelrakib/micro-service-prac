@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+
+  # 🔹 One-time setup container
+  setup:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.setup
+    container_name: product_setup
+    volumes:
+      - ./src:/app
+    working_dir: /app
+    command: >
+      sh -c "
+      if [ ! -f artisan ]; then
+        echo 'Installing Laravel 12...';
+        curl -sS https://getcomposer.org/installer | php &&
+        mv composer.phar /usr/local/bin/composer &&
+        composer create-project laravel/laravel:^12.0 .;
+      else
+        echo 'Laravel already exists, skipping install.';
+      fi
+      "
+    networks:
+      - laravel-net
+
+  # 🔹 Runtime container
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: product
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    ports:
+      - "8001:8000"
+    depends_on:
+      - setup
+    networks:
+      - laravel-net
+
+networks:
+  laravel-net:
+    external: true
