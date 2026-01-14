@@ -18,3 +18,5 @@ Route::get('/product/call-customer', function () {
     return response()->json($response->json(), 200);
 });
 
+Route::get('/product/cache/all', [App\Http\Controllers\ProductController::class, 'dataFromCache']);
+

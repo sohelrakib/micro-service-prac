@@ -24,6 +24,7 @@ services:
       "
     networks:
       - laravel-net
+      - common-net
 
   # 🔹 Runtime container
   app:
@@ -41,7 +42,11 @@ services:
       - setup
     networks:
       - laravel-net
+      - common-net
 
 networks:
   laravel-net:
+    external: true
+
+  common-net:
     external: true
