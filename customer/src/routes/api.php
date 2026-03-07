@@ -13,8 +13,36 @@ Route::get('/customer/ping', function () {
 });
 
 Route::get('/customer/call-product', function () {
-    $response = Http::get('http://product:8000/api/ping');
-    return $response->json();
+    // url is: http://localhost:8002/api/customer/call-product
+    try {
+        $response = Http::throw()->get('http://product:8000/api/product/ping');
+        echo "from customer service: <br>";
+        echo "ping to product service: <br>";
+        return $response->json();
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+    
+    // $response = Http::get('http://product:8000/api/product/ping');
+    // return $response->json();
+});
+
+Route::get('/customer/call-product-by-network-alias', function () {
+    // url is: http://localhost:8002/api/customer/call-product-by-network-alias
+    try {
+        $response = Http::throw()->get('http://prac-product-app:8000/api/product/ping');
+        echo "from customer service using network alias: <br>";
+        echo "ping to product service using network alias: <br>";
+        return $response->json();
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
 });
 
 Route::get('/customer', function () {

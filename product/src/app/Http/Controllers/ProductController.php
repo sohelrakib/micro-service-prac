@@ -9,6 +9,7 @@ class ProductController extends Controller
 {
     public function dataFromCache()
     {
+        // git proj: micro-service-prac
         // REDIS_HOST=common-redis
         // REDIS_PASSWORD=redispassword
         // REDIS_PORT=6379

@@ -38,7 +38,9 @@ services:
     depends_on:
       - setup
     networks:
-      - laravel-net
+      laravel-net:
+        aliases:
+          - prac-customer-app
 
 networks:
   laravel-net:
