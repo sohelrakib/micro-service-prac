@@ -41,7 +41,11 @@ services:
       laravel-net:
         aliases:
           - prac-customer-app
+      common-net:
 
 networks:
   laravel-net:
+    external: true
+
+  common-net:
     external: true
