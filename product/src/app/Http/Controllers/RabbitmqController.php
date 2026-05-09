@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use PhpAmqpLib\Message\AMQPMessage;
 use VladimirYuldashev\LaravelQueueRabbitMQ\Queue\RabbitMQQueue;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 class RabbitmqController extends Controller
 {
@@ -46,6 +47,96 @@ class RabbitmqController extends Controller
 
         return response()->json([
             'status' => 'Message published',
+        ]);
+    }
+
+    public function fanoutJsonEvent() 
+    {
+        // ------------------------------------------------------------
+        // STEP 1: Connect to RabbitMQ server
+        // ------------------------------------------------------------
+        $connection = new AMQPStreamConnection(
+            env('RABBITMQ_HOST'),      // RabbitMQ host/container name
+            env('RABBITMQ_PORT'),      // RabbitMQ port
+            env('RABBITMQ_USER'),      // RabbitMQ username
+            env('RABBITMQ_PASSWORD')   // RabbitMQ password
+        );
+
+
+        // ------------------------------------------------------------
+        // STEP 2: Create communication channel
+        // ------------------------------------------------------------
+        $channel = $connection->channel();
+
+
+        // ------------------------------------------------------------
+        // STEP 3: Declare FANOUT exchange
+        //
+        // FANOUT exchange:
+        // - broadcasts message to ALL bound queues
+        // - routing key is ignored
+        // ------------------------------------------------------------
+        $channel->exchange_declare(
+            'logs_fanout',  // exchange name
+            'fanout',       // exchange type
+            false,          // passive:
+                            // false = create exchange if not exists
+            true,           // durable:
+                            // true = survive RabbitMQ restart
+            false           // auto delete:
+                            // false = do not delete automatically
+        );
+
+        
+        
+        // ------------------------------------------------------------
+        // STEP 4: Prepare JSON payload
+        // ------------------------------------------------------------
+        $data = [
+            'event' => 'user.created',
+            'user_id' => 1,
+            'name' => 'Sohel Rakib',
+            'time' => now()->toDateTimeString(),
+        ];
+
+
+        // ------------------------------------------------------------
+        // STEP 5: Convert array → JSON message
+        // ------------------------------------------------------------
+        $message = new AMQPMessage(
+            json_encode($data), // message body
+            [
+                'content_type' => 'application/json',
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT
+                // persistent message
+                // survives RabbitMQ restart
+            ]
+        );
+
+
+        // ------------------------------------------------------------
+        // STEP 6: Publish message to FANOUT exchange
+        //
+        // IMPORTANT:
+        // routing key is ignored in fanout exchange
+        // ------------------------------------------------------------
+        $channel->basic_publish(
+            $message,       // message object
+            'logs_fanout',  // exchange name
+            ''              // routing key (ignored in fanout)
+        );
+
+
+        // ------------------------------------------------------------
+        // STEP 7: Close channel and connection
+        // ------------------------------------------------------------
+        $channel->close();
+        $connection->close();
+
+        Log::info('FANOUT-JSON-EVENT-Message-Sent:', $data);
+
+        return response()->json([
+            'status' => 'Fanout message published successfully'
         ]);
     }
 }

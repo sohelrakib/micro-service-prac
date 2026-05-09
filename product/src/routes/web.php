@@ -24,3 +24,4 @@ Route::get('/rmq-send-direct', function () {
 });
 
 Route::get('/rmq-send-direct-json-event', [RabbitmqController::class, 'directJsonEvent']);
+Route::get('/rmq-send-fanout-json-event', [RabbitmqController::class, 'fanoutJsonEvent']);
