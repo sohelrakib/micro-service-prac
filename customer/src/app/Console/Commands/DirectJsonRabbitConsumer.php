@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
 
 class DirectJsonRabbitConsumer extends Command
 {
@@ -32,7 +33,7 @@ class DirectJsonRabbitConsumer extends Command
         // ------------------------------------------------------------
         // STEP 1: Create connection to RabbitMQ server
         // This opens a TCP connection between Laravel and RabbitMQ
-        // ------------------------------------------------------------
+        // this connection code should be in seperate class ------------------------------------------------------------
         $connection = new AMQPStreamConnection(
             env('RABBITMQ_HOST'),
             env('RABBITMQ_PORT'),
@@ -68,33 +69,7 @@ class DirectJsonRabbitConsumer extends Command
         // IMPORTANT:
         // - You DO NOT call this manually
         // - RabbitMQ calls it when message is received
-        // ------------------------------------------------------------
-        $callback = function ($msg) {
-
-            // --------------------------------------------------------
-            // STEP 5: Read message body
-            // RabbitMQ sends raw string, we decode JSON into array
-            // --------------------------------------------------------
-            $data = json_decode($msg->body, true);
-
-            // --------------------------------------------------------
-            // STEP 6: Logging received event for debugging/monitoring
-            // --------------------------------------------------------
-            \Log::info('JSON-EVENT-Message-Received:', $data);
-
-            // --------------------------------------------------------
-            // STEP 7: Business logic based on event type
-            // This is where your application logic should happen
-            // --------------------------------------------------------
-            if (($data['event'] ?? null) === 'user.created') {
-
-                echo "User created event received\n";
-
-                // Example: call service layer instead of writing logic here
-                // app(UserService::class)->handleUserCreated($data);
-            }
-        };
-
+        // in past callback was written directly in this function, now it's moved to handleMessage method
         // ------------------------------------------------------------
         // STEP 8: Start consuming messages
         // This tells RabbitMQ:
@@ -107,7 +82,7 @@ class DirectJsonRabbitConsumer extends Command
             true,          // no ack (auto acknowledge)
             false,         // exclusive
             false,         // no wait
-            $callback      // callback function
+            [$this, 'handleMessage']
         );
 
         // ------------------------------------------------------------
@@ -122,5 +97,30 @@ class DirectJsonRabbitConsumer extends Command
         // note: while ($channel->is_consuming()) { ...} no need if we use cron job. but we should use Supervisor which is Best for RabbitMQ. 
         // command=php artisan rabbit:consume or php artisan app:direct-json-rabbit-consumer
         // autorestart=true
+    }
+
+    private function handleMessage(AMQPMessage $message): void
+    {
+        // --------------------------------------------------------
+        // STEP 5: Read message body
+        // RabbitMQ sends raw string, we decode JSON into array
+        // --------------------------------------------------------
+        $data = json_decode($message->body, true);
+
+        // --------------------------------------------------------
+        // STEP 6: Logging received event for debugging/monitoring
+        // --------------------------------------------------------
+        \Log::info('JSON-EVENT-Message-Received:', $data);
+
+        // --------------------------------------------------------
+        // STEP 7: Business logic based on event type
+        // This is where your application logic should happen
+        // --------------------------------------------------------
+        if (($data['event'] ?? null) === 'user.created') {
+            echo "User created event received\n";
+
+            // Example: call service layer instead of writing logic here
+            // app(UserService::class)->handleUserCreated($data);
+        }
     }
 }

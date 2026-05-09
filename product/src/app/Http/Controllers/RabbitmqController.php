@@ -28,7 +28,7 @@ class RabbitmqController extends Controller
         $data = [
             'event' => 'user.created',
             'user_id' => 1,
-            'name' => 'users-name',
+            'name' => 'users-name2',
             'email' => 'users-email@example.com',
             'dob' => '1990-01-01',
             'created_at' => now()->toDateTimeString(),
