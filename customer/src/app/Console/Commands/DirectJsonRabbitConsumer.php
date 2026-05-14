@@ -94,9 +94,9 @@ class DirectJsonRabbitConsumer extends Command
             $channel->wait();
         }
 
-        // note: while ($channel->is_consuming()) { ...} no need if we use cron job. but we should use Supervisor which is Best for RabbitMQ. 
-        // command=php artisan rabbit:consume or php artisan app:direct-json-rabbit-consumer
-        // autorestart=true
+        // Keep the consumer process alive; required for long-running RabbitMQ workers.
+        // Supervisor should be used to run and auto-restart this command in production.
+        // Example: command=php artisan app:direct-json-rabbit-consumer, autorestart=true
     }
 
     private function handleMessage(AMQPMessage $message): void
