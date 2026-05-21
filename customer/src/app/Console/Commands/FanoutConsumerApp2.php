@@ -6,25 +6,26 @@ use Illuminate\Console\Command;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-class FanoutConsumerApp1 extends Command
+class FanoutConsumerApp2 extends Command
 {
     /**
      * The name and signature of the console command.
-     *
+     * php artisan make:command FanoutConsumerApp2
+     * php artisan rabbitmq:fanout-consumer-app2
+     * 
      * @var string
      */
-    protected $signature = 'rabbitmq:fanout-consumer-app1';
+    protected $signature = 'rabbitmq:fanout-consumer-app2';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Consume messages from the fanout exchange for App1';
+    protected $description = 'Consume messages from the fanout exchange for App2';
 
     /**
      * Execute the console command.
-     * php artisan rabbitmq:fanout-consumer-app1
      */
     public function handle()
     {
@@ -56,10 +57,10 @@ class FanoutConsumerApp1 extends Command
         );
 
         // --------------------------------------------------------
-        // STEP 4: Declare queue for App 1
+        // STEP 4: Declare queue for App 2
         // --------------------------------------------------------
         $channel->queue_declare(
-            'fanout_queue_1',  // queue name
+            'fanout_queue_2',  // queue name
             false,         // passive
             true,          // durable
             false,         // exclusive
@@ -70,23 +71,23 @@ class FanoutConsumerApp1 extends Command
         // STEP 5: Bind queue to exchange
         //
         // Means:
-        // fanout_queue_1 listens to logs_fanout exchange
+        // fanout_queue_2 listens to logs_fanout exchange
         // --------------------------------------------------------
         $channel->queue_bind(
 
-            'fanout_queue_1',  // queue name
+            'fanout_queue_2',  // queue name
 
             'logs_fanout'  // exchange name
         );
 
-        $this->info('App 1 waiting for fanout messages...');
+        $this->info('App 2 waiting for fanout messages...');
 
         // --------------------------------------------------------
         // STEP 6: Register consumer callback
         // --------------------------------------------------------
         $channel->basic_consume(
 
-            'fanout_queue_1', // queue name
+            'fanout_queue_2', // queue name
 
             '',           // consumer tag
                           // empty = auto generated
@@ -114,6 +115,7 @@ class FanoutConsumerApp1 extends Command
         }
     }
 
+
     /**
      * Handle incoming messages
      */
@@ -127,7 +129,7 @@ class FanoutConsumerApp1 extends Command
         // --------------------------------------------------------
         // STEP 9: Show message
         // --------------------------------------------------------
-        $this->info('App 1 received message');
+        $this->info('App 2 received message');
         \Log::info('JSON-EVENT-Message-Received:', $data);
         $this->info('Data: ' . json_encode($data));
 
@@ -138,5 +140,4 @@ class FanoutConsumerApp1 extends Command
         // --------------------------------------------------------
         $message->ack();
     }
-    
 }
