@@ -139,4 +139,88 @@ class RabbitmqController extends Controller
             'status' => 'Fanout message published successfully'
         ]);
     }
+
+    public function directJsonEventWithExchange()
+    {
+        // ------------------------------------------------------------
+        // STEP 1: Get RabbitMQ connection from Laravel queue system
+        // ------------------------------------------------------------
+        /** @var RabbitMQQueue $queue */
+        $queue = Queue::connection();
+
+
+        // ------------------------------------------------------------
+        // STEP 2: Get underlying RabbitMQ connection
+        // ------------------------------------------------------------
+        $connection = $queue->getConnection();
+
+        
+        // ------------------------------------------------------------
+        // STEP 3: Create channel
+        // ------------------------------------------------------------
+        $channel = $connection->channel();
+
+        
+        // ------------------------------------------------------------
+        // STEP 4: Declare DIRECT exchange
+        //
+        // DIRECT exchange routes messages
+        // based on exact routing key matching
+        // ------------------------------------------------------------
+        $channel->exchange_declare(
+            'direct_app_exchange', // exchange name
+
+            'direct',       // exchange type
+
+            false,          // passive
+                            // false = create if not exists
+
+            true,           // durable
+                            // survives RabbitMQ restart
+
+            false           // auto delete
+        );
+
+
+        // ------------------------------------------------------------
+        // STEP 5: Prepare JSON payload
+        // ------------------------------------------------------------
+        $data = [
+            'event' => 'product.created',
+            'product_id' => 1,
+            'name' => 'MacBook Pro M5',
+            'email' => 'macbook@example.com',
+            'created_at' => now()->toDateTimeString(),
+        ];
+
+
+        // ------------------------------------------------------------
+        // STEP 6: Create RabbitMQ message
+        // ------------------------------------------------------------
+        $msg = new AMQPMessage(
+            json_encode($data),
+            [
+                'content_type' => 'application/json',
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT
+            ]
+        );
+
+
+        // ------------------------------------------------------------
+        // STEP 7: Publish message to DIRECT exchange
+        //
+        // routing key = product.created
+        // ------------------------------------------------------------
+        $channel->basic_publish(
+            $msg,               // message
+            'direct_app_exchange',     // exchange name
+            'product.created'      // routing key
+        );
+
+
+        return response()->json([
+            'status' => 'Direct message published successfully',
+            'data' => $data
+        ]);
+    }
 }
