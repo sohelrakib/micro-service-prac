@@ -23,6 +23,7 @@ services:
       "
     networks:
       - laravel-net
+      - common-net
 
   app:
     build:

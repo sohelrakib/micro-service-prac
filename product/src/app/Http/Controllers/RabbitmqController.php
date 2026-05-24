@@ -217,6 +217,7 @@ class RabbitmqController extends Controller
             'product.created'      // routing key
         );
 
+        Log::info('DIRECT-JSON-WITH-EXCHANGE-EVENT-Message-Sent:', $data);
 
         return response()->json([
             'status' => 'Direct message published successfully',
