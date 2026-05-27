@@ -224,4 +224,94 @@ class RabbitmqController extends Controller
             'data' => $data
         ]);
     }
+
+
+    public function topicJsonEvent () 
+    {
+        /** @var RabbitMQQueue $queue */
+        $queue = Queue::connection();
+        $connection = $queue->getConnection();
+        $channel = $connection->channel();
+        
+
+        // --------------------------------------------------------
+        // STEP 1: Declare TOPIC exchange
+        //
+        // Topic exchange = pattern-based routing system
+        // Supports wildcards:
+        //   *  = exactly one word
+        //   #  = zero or more words
+        // --------------------------------------------------------
+        $channel->exchange_declare(
+
+            'app_topic_exchange', // exchange name
+                                // This is the "router" name
+
+            'topic',              // exchange type
+                                // topic = pattern matching routing
+
+            false,                // passive
+                                // false = create exchange if not exists
+                                // true  = only check existence
+
+            true,                 // durable
+                                // true = exchange survives RabbitMQ restart
+
+            false                 // auto_delete
+                                // false = do NOT delete exchange automatically
+        );
+
+
+        // --------------------------------------------------------
+        // STEP 2: Create event payload
+        // --------------------------------------------------------
+        $data = [
+            'event' => 'product.created',
+            'product_id' => 1,
+            'name' => 'MacBook Pro M5', 
+            'email' => 'macbook@example.com',
+            'address' => 'Dhaka, Bangladesh',
+        ];
+
+
+        // --------------------------------------------------------
+        // STEP 3: Convert payload to RabbitMQ message
+        // --------------------------------------------------------
+        $msg = new AMQPMessage(
+            json_encode($data), // message body (string format)
+            [
+                'content_type' => 'application/json',
+                // tells consumer: message is JSON
+
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT
+                // 1 = non-persistent
+                // 2 = persistent (survives broker restart)
+            ]
+        );
+
+
+        // --------------------------------------------------------
+        // STEP 4: Publish message to topic exchange
+        // --------------------------------------------------------
+        $channel->basic_publish(
+            $msg,                  // AMQPMessage object
+                                // actual message content
+
+            'app_topic_exchange',  // exchange name
+                                // where message is sent
+
+            // 'student.created'    //testing routing key
+            'product.created'         // routing key
+                                // used for pattern matching
+        );
+
+
+        Log::info('TOPIC-JSON-WITH-EXCHANGE-EVENT-Message-Sent:', $data);
+
+        return response()->json([
+            'status' => 'Topic message published successfully',
+            'data' => $data
+        ]);
+
+    }
 }
